@@ -65,5 +65,64 @@ export class CdkExampleStack extends cdk.Stack {
       securityGroup,
       vpc,
     });
+
+    // Use an asset to allow uploading files to S3 and then download it to the EC2 instance as part of the user data
+
+    // Upload the sample app to S3
+    const appAsset = new s3Assets.Asset(this, "AppAsset", {
+      path: path.join(__dirname, "..", "app"),
+    });
+
+    // Allow EC2 instance to read the file
+    appAsset.grantRead(ec2Instance.role);
+
+    // Download the file from S3 and store the full location and filename as a variable
+    const appFilePath = ec2Instance.userData.addS3DownloadCommand({
+      bucket: appAsset.bucket,
+      bucketKey: appAsset.s3ObjectKey,
+    });
+
+    // Upload the configuration file to S3
+    const configAsset = new s3Assets.Asset(this, "ConfigAsset", {
+      path: path.join(
+        __dirname,
+        "..",
+        "app",
+        "configure_amz_linux_sample_app.sh"
+      ),
+    });
+
+    // Allow EC2 instance to read the file
+    configAsset.grantRead(ec2Instance.role);
+
+    // Download the file from S3 and store the full location and filename as a variable
+    const configFilePath = ec2Instance.userData.addS3DownloadCommand({
+      bucket: configAsset.bucket,
+      bucketKey: configAsset.s3ObjectKey,
+    });
+
+    // Add a line to the user data to execute the downloaded file
+    ec2Instance.userData.addExecuteFileCommand({
+      arguments: appFilePath,
+      filePath: configFilePath,
+    });
+
+    // Create outputs for connecting
+
+    // Output the public IP address of the EC2 instance
+    new cdk.CfnOutput(this, "IP Address", {
+      value: ec2Instance.instancePublicIp,
+    });
+
+    // Command to download the SSH key
+    new cdk.CfnOutput(this, "Download Key Command", {
+      value:
+        "aws secretsmanager get-secret-value --secret-id ec2-ssh-key/cdk-keypair/private --query SecretString --out",
+    });
+
+    // Command to access the EC2 instance using SSH
+    new cdk.CfnOutput(this, "SSH Command", {
+      value: `ssh -i cdk-key.pem -o IdentitiesOnly=yes ec2-user@${ec2Instance.instancePublicIp}`,
+    });
   }
 }
