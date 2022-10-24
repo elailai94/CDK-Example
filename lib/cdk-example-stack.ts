@@ -117,7 +117,7 @@ export class CdkExampleStack extends cdk.Stack {
     // Command to download the SSH key
     new cdk.CfnOutput(this, "Download Key Command", {
       value:
-        "aws secretsmanager get-secret-value --secret-id ec2-ssh-key/cdk-keypair/private --query SecretString --out",
+        "aws secretsmanager get-secret-value --secret-id ec2-ssh-key/cdk-keypair/private --query SecretString --output text > cdk-key.pem && chmod 400 cdk-key.pem",
     });
 
     // Command to access the EC2 instance using SSH
