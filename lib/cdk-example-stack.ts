@@ -46,5 +46,24 @@ export class CdkExampleStack extends cdk.Stack {
     role.addManagedPolicy(
       iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonSSMManagedInstanceCore")
     );
+
+    // Look up the AMI ID for the Amazon Linux 2 Image with CPU Type X86_64
+    const ami = new ec2.AmazonLinuxImage({
+      cpuType: ec2.AmazonLinuxCpuType.X86_64,
+      generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2,
+    });
+
+    // Create the EC2 instance using the Security Group, AMI and KeyPair defined
+    const ec2Instance = new ec2.Instance(this, "Instance", {
+      instanceType: ec2.InstanceType.of(
+        ec2.InstanceClass.T2,
+        ec2.InstanceSize.MICRO
+      ),
+      keyName: key.keyPairName,
+      machineImage: ami,
+      role,
+      securityGroup,
+      vpc,
+    });
   }
 }
